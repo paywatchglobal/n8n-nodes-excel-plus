@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- `Options > Output File Name` on the `Merge Sheets` operation, allowing the merged workbook's file name to be customized. The `.xlsx` extension is enforced automatically.
+
 ## 0.1.0 - 2026-05-22
 
 ### Added
