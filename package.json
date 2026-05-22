@@ -1,0 +1,55 @@
+{
+    "name": "@paywatchglobal/n8n-nodes-excel-plus",
+    "version": "0.1.0",
+    "description": "n8n community node for Excel operations (merge sheets, more coming).",
+    "license": "MIT",
+    "homepage": "",
+    "keywords": [
+        "n8n-community-node-package",
+        "excel",
+        "xlsx",
+        "spreadsheet",
+        "merge"
+    ],
+    "author": {
+        "name": "Asyrique Thevendran",
+        "email": "asyrique.thevendran@paywatchglobal.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/paywatchglobal/n8n-nodes-excel-plus.git"
+    },
+    "scripts": {
+        "build": "tsc --noEmit && node scripts/build.mjs",
+        "build:watch": "node scripts/build.mjs --watch",
+        "dev": "n8n-node dev",
+        "lint": "n8n-node lint",
+        "lint:fix": "n8n-node lint --fix",
+        "release": "n8n-node release",
+        "prepublishOnly": "n8n-node prerelease",
+        "preinstall": "npm_config_registry=https://registry.npmjs.org npm exec ado-npm-auth"
+    },
+    "files": [
+        "dist"
+    ],
+    "n8n": {
+        "n8nNodesApiVersion": 1,
+        "strict": true,
+        "credentials": [],
+        "nodes": [
+            "dist/nodes/ExcelPlus/ExcelPlus.node.js"
+        ]
+    },
+    "devDependencies": {
+        "@n8n/node-cli": "*",
+        "esbuild": "^0.28.0",
+        "eslint": "9.32.0",
+        "exceljs": "^4.4.0",
+        "prettier": "3.6.2",
+        "release-it": "^19.0.4",
+        "typescript": "5.9.2"
+    },
+    "peerDependencies": {
+        "n8n-workflow": "*"
+    }
+}

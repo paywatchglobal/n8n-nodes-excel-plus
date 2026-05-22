@@ -1,0 +1,93 @@
+# When Dependabot opens a PR bumping exceljs, amend the PR with a matching
+# bump of this package's version (and a CHANGELOG entry). exceljs is bundled
+# into the dist artifact, so every exceljs update needs a fresh release.
+#
+# Notes:
+#   - Pushes from GITHUB_TOKEN do NOT re-trigger the `pull_request` event,
+#     so CI will not re-run on the amend commit. That is acceptable here
+#     because the amend only touches package.json / package-lock.json /
+#     CHANGELOG.md, none of which the build relies on. If you want CI to
+#     re-run, swap GITHUB_TOKEN for a PAT or a GitHub App token in checkout.
+#   - The job is gated on `github.actor == 'dependabot[bot]'` so it only
+#     runs on Dependabot-opened PRs.
+
+name: Dependabot — bump package on ExcelJS update
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dependabot-exceljs-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  bump:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip — not an ExcelJS bump
+        if: ${{ !contains(steps.meta.outputs.dependency-names, 'exceljs') }}
+        run: echo "exceljs is not in this PR (${{ steps.meta.outputs.dependency-names }}). Nothing to do."
+
+      - name: Set up Node.js
+        if: contains(steps.meta.outputs.dependency-names, 'exceljs')
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Bump package version and CHANGELOG
+        if: contains(steps.meta.outputs.dependency-names, 'exceljs')
+        env:
+          NEW_DEP_VERSION: ${{ steps.meta.outputs.new-version }}
+          PREV_DEP_VERSION: ${{ steps.meta.outputs.previous-version }}
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+
+          case "$UPDATE_TYPE" in
+            version-update:semver-major) BUMP=major ;;
+            version-update:semver-minor) BUMP=minor ;;
+            *)                           BUMP=patch ;;
+          esac
+
+          git config user.name  "dependabot[bot]"
+          git config user.email "49699333+dependabot[bot]@users.noreply.github.com"
+
+          npm version "$BUMP" --no-git-tag-version
+          NEW_PKG_VERSION=$(node -p "require('./package.json').version")
+          TODAY=$(date -u +%F)
+
+          {
+            printf '## %s - %s\n\n' "$NEW_PKG_VERSION" "$TODAY"
+            printf '### Changed\n- Bumped bundled `exceljs` to `%s` (was `%s`).\n\n' "$NEW_DEP_VERSION" "$PREV_DEP_VERSION"
+            cat CHANGELOG.md
+          } > CHANGELOG.md.new
+          mv CHANGELOG.md.new CHANGELOG.md
+
+          # Idempotency: skip when our changes are already on the branch.
+          if git diff --quiet -- package.json package-lock.json CHANGELOG.md; then
+            echo "No changes to commit (already bumped)."
+            exit 0
+          fi
+
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "chore: bump package to ${NEW_PKG_VERSION} (exceljs ${NEW_DEP_VERSION})"
+          git push origin "HEAD:${HEAD_REF}"
