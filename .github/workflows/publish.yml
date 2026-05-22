@@ -72,17 +72,11 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Install dependencies
+        # `npm ci` installs the exact exceljs version pinned in package-lock.json,
+        # so every release bundles a known, audited dependency. Dependabot opens
+        # PRs when exceljs publishes a new tag; the dependabot-exceljs workflow
+        # then bumps this package's version with a matching patch/minor/major.
         run: npm ci
-
-      - name: Bundle the latest published exceljs
-        # The pinned version in package.json gives reproducible local builds, but
-        # at publish time we want the freshest tagged exceljs in the dist bundle
-        # so users get upstream fixes without waiting for the Dependabot loop.
-        # `--no-save` updates node_modules only — package.json and the lockfile
-        # are left untouched, so release-it still sees a clean working tree.
-        run: |
-          npm install --no-save exceljs@latest
-          node -e "console.log('Bundling exceljs', require('exceljs/package.json').version)"
 
       - name: Release
         # `npm run release` -> `n8n-node release` -> release-it -> `npm publish --provenance`.
