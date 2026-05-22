@@ -74,6 +74,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Bundle the latest published exceljs
+        # The pinned version in package.json gives reproducible local builds, but
+        # at publish time we want the freshest tagged exceljs in the dist bundle
+        # so users get upstream fixes without waiting for the Dependabot loop.
+        # `--no-save` updates node_modules only — package.json and the lockfile
+        # are left untouched, so release-it still sees a clean working tree.
+        run: |
+          npm install --no-save exceljs@latest
+          node -e "console.log('Bundling exceljs', require('exceljs/package.json').version)"
+
       - name: Release
         # `npm run release` -> `n8n-node release` -> release-it -> `npm publish --provenance`.
         # No NPM_TOKEN is set: npm CLI detects `id-token: write` permission and
