@@ -26,8 +26,7 @@
         "lint": "n8n-node lint",
         "lint:fix": "n8n-node lint --fix",
         "release": "n8n-node release",
-        "prepublishOnly": "n8n-node prerelease",
-        "preinstall": "npm_config_registry=https://registry.npmjs.org npm exec ado-npm-auth"
+        "prepublishOnly": "n8n-node prerelease"
     },
     "files": [
         "dist"
