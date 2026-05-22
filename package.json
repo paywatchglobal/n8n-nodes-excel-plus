@@ -1,6 +1,6 @@
 {
     "name": "@paywatchglobal/n8n-nodes-excel-plus",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "n8n community node for Excel operations (merge sheets, more coming).",
     "license": "MIT",
     "homepage": "",
