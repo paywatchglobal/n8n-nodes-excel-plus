@@ -42,6 +42,14 @@ function stripExtension(fileName: string): string {
 	return lastDot > 0 ? fileName.slice(0, lastDot) : fileName;
 }
 
+const INVALID_FILE_NAME_CHARS = /[\\/:*?"<>|]/g;
+
+function sanitizeOutputFileName(raw: string): string {
+	const cleaned = raw.replace(INVALID_FILE_NAME_CHARS, '_').replace(/^\.+/, '').trim();
+	const base = cleaned === '' ? 'merged' : stripExtension(cleaned) || 'merged';
+	return `${base}.xlsx`;
+}
+
 function buildPrefixedName(
 	fileName: string | undefined,
 	sheetName: string,
@@ -254,6 +262,29 @@ export class ExcelPlus implements INodeType {
 					},
 				},
 			},
+			{
+				displayName: 'Options',
+				name: 'options',
+				type: 'collection',
+				placeholder: 'Add Option',
+				default: {},
+				displayOptions: {
+					show: {
+						operation: ['mergeSheets'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Output File Name',
+						name: 'outputFileName',
+						type: 'string',
+						default: 'merged.xlsx',
+						placeholder: 'merged.xlsx',
+						description:
+							'File name for the merged workbook on the output binary. A ".xlsx" extension is added automatically if missing.',
+					},
+				],
+			},
 		],
 	};
 
@@ -270,6 +301,10 @@ export class ExcelPlus implements INodeType {
 		);
 		const binaryFieldMode = this.getNodeParameter('binaryFieldMode', 0) as 'same' | 'different';
 		const sheetNameConflict = this.getNodeParameter('sheetNameConflict', 0) as 'suffix' | 'prefix';
+		const options = this.getNodeParameter('options', 0, {}) as {
+			outputFileName?: string;
+		};
+		const outputFileName = sanitizeOutputFileName(options.outputFileName ?? 'merged.xlsx');
 
 		const node = this.getNode();
 		let resolveBinaryName: (inputIndex: number) => string;
@@ -381,7 +416,6 @@ export class ExcelPlus implements INodeType {
 		const writeResult = await outputWorkbook.xlsx.writeBuffer();
 		// Bridge Node 22's Buffer<ArrayBufferLike> back to the legacy Buffer type expected by n8n-workflow.
 		const outputBuffer = Buffer.from(writeResult as unknown as ArrayBuffer) as unknown as Buffer;
-		const outputFileName = 'merged.xlsx';
 		const outputBinary = await this.helpers.prepareBinaryData(
 			outputBuffer,
 			outputFileName,
